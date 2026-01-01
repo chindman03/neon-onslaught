@@ -655,72 +655,228 @@
       }
     }
     
+    // Current track selection
+    let currentTrack = 0;
+    
     function startBackgroundMusic() {
       if (!audioInitialized) return;
       
       try {
-        // Neon Rider style chord progression
-        const chords = [
-          ['A2', 'C3', 'E3'],
-          ['F2', 'A2', 'C3'],
-          ['C2', 'E2', 'G2'],
-          ['G2', 'B2', 'D3']
-        ];
+        // Stop any existing patterns
+        Tone.Transport.stop();
+        Tone.Transport.cancel();
         
-        const bassNotes = ['A1', 'A1', 'F1', 'F1', 'C1', 'C1', 'G1', 'G1'];
+        // Randomly select track if not specified
+        if (currentTrack === 0) {
+          currentTrack = Math.floor(Math.random() * 3) + 1;
+        }
         
-        const melodyPattern = [
-          ['A4', 'C5', 'E5', 'A5', 'E5', 'C5', 'A4', 'E4'],
-          ['F4', 'A4', 'C5', 'F5', 'C5', 'A4', 'F4', 'C4'],
-          ['C4', 'E4', 'G4', 'C5', 'G4', 'E4', 'C4', 'G3'],
-          ['G3', 'B3', 'D4', 'G4', 'D4', 'B3', 'G3', 'D3']
-        ];
-        
-        const bpm = 120;
+        const bpm = currentTrack === 1 ? 120 : (currentTrack === 2 ? 135 : 128);
         Tone.Transport.bpm.value = bpm;
         
-        // Kick drum pattern
-        const kickPattern = new Tone.Loop((time) => {
-          kick.triggerAttackRelease('C1', '8n', time);
-        }, '4n');
-        kickPattern.start(0);
-        
-        // Snare on 2 and 4
-        const snarePattern = new Tone.Loop((time) => {
-          noiseSnare.triggerAttackRelease('8n', time);
-        }, '2n');
-        snarePattern.start('4n');
-        
-        // Bass loop
-        let bassIndex = 0;
-        const bassLoop = new Tone.Loop((time) => {
-          synthBass.triggerAttackRelease(bassNotes[bassIndex % 8], '8n', time);
-          bassIndex++;
-        }, '8n');
-        bassLoop.start(0);
-        
-        // Chord pads
-        let chordIndex = 0;
-        const chordLoop = new Tone.Loop((time) => {
-          synthPad.triggerAttackRelease(chords[chordIndex % 4], '1n', time);
-          chordIndex++;
-        }, '1n');
-        chordLoop.start(0);
-        
-        // Lead melody
-        let melodyIndex = 0;
-        const melodyLoop = new Tone.Loop((time) => {
-          const section = Math.floor(melodyIndex / 8) % 4;
-          const note = melodyPattern[section][melodyIndex % 8];
-          synthLead.triggerAttackRelease(note, '16n', time);
-          melodyIndex++;
-        }, '16n');
-        melodyLoop.start('1n');
+        if (currentTrack === 1) {
+          startTrack1(); // Original Neon Rider style
+        } else if (currentTrack === 2) {
+          startTrack2(); // Tron - Dark and driving
+        } else {
+          startTrack3(); // Tron - Epic and intense
+        }
         
         Tone.Transport.start();
       } catch (e) {
         console.log('Music start failed:', e);
       }
+    }
+    
+    function startTrack1() {
+      // Original Neon Rider style
+      const chords = [
+        ['A2', 'C3', 'E3'],
+        ['F2', 'A2', 'C3'],
+        ['C2', 'E2', 'G2'],
+        ['G2', 'B2', 'D3']
+      ];
+      
+      const bassNotes = ['A1', 'A1', 'F1', 'F1', 'C1', 'C1', 'G1', 'G1'];
+      
+      const melodyPattern = [
+        ['A4', 'C5', 'E5', 'A5', 'E5', 'C5', 'A4', 'E4'],
+        ['F4', 'A4', 'C5', 'F5', 'C5', 'A4', 'F4', 'C4'],
+        ['C4', 'E4', 'G4', 'C5', 'G4', 'E4', 'C4', 'G3'],
+        ['G3', 'B3', 'D4', 'G4', 'D4', 'B3', 'G3', 'D3']
+      ];
+      
+      // Kick drum pattern
+      const kickPattern = new Tone.Loop((time) => {
+        kick.triggerAttackRelease('C1', '8n', time);
+      }, '4n');
+      kickPattern.start(0);
+      
+      // Snare on 2 and 4
+      const snarePattern = new Tone.Loop((time) => {
+        noiseSnare.triggerAttackRelease('8n', time);
+      }, '2n');
+      snarePattern.start('4n');
+      
+      // Bass loop
+      let bassIndex = 0;
+      const bassLoop = new Tone.Loop((time) => {
+        synthBass.triggerAttackRelease(bassNotes[bassIndex % 8], '8n', time);
+        bassIndex++;
+      }, '8n');
+      bassLoop.start(0);
+      
+      // Chord pads
+      let chordIndex = 0;
+      const chordLoop = new Tone.Loop((time) => {
+        synthPad.triggerAttackRelease(chords[chordIndex % 4], '1n', time);
+        chordIndex++;
+      }, '1n');
+      chordLoop.start(0);
+      
+      // Lead melody
+      let melodyIndex = 0;
+      const melodyLoop = new Tone.Loop((time) => {
+        const section = Math.floor(melodyIndex / 8) % 4;
+        const note = melodyPattern[section][melodyIndex % 8];
+        synthLead.triggerAttackRelease(note, '16n', time);
+        melodyIndex++;
+      }, '16n');
+      melodyLoop.start('1n');
+    }
+    
+    function startTrack2() {
+      // Tron Track 1 - Dark and driving (Em - C - D - B)
+      const chords = [
+        ['E2', 'G2', 'B2'],
+        ['C2', 'E2', 'G2'],
+        ['D2', 'F#2', 'A2'],
+        ['B1', 'D#2', 'F#2']
+      ];
+      
+      // Pulsing bass pattern - more aggressive
+      const bassNotes = ['E1', 'E1', 'E2', 'E1', 'C1', 'C1', 'C2', 'C1', 
+                         'D1', 'D1', 'D2', 'D1', 'B0', 'B0', 'B1', 'B0'];
+      
+      // Arpeggiated lead - Tron style
+      const melodyPattern = [
+        ['E4', 'G4', 'B4', 'E5', 'B4', 'G4', 'B4', 'E5', 'G5', 'B5', 'E5', 'B4', 'G4', 'E4', 'B3', 'E4'],
+        ['C4', 'E4', 'G4', 'C5', 'G4', 'E4', 'G4', 'C5', 'E5', 'G5', 'C5', 'G4', 'E4', 'C4', 'G3', 'C4'],
+        ['D4', 'F#4', 'A4', 'D5', 'A4', 'F#4', 'A4', 'D5', 'F#5', 'A5', 'D5', 'A4', 'F#4', 'D4', 'A3', 'D4'],
+        ['B3', 'D#4', 'F#4', 'B4', 'F#4', 'D#4', 'F#4', 'B4', 'D#5', 'F#5', 'B4', 'F#4', 'D#4', 'B3', 'F#3', 'B3']
+      ];
+      
+      // Double-time kick for intensity
+      const kickPattern = new Tone.Loop((time) => {
+        kick.triggerAttackRelease('C1', '16n', time);
+      }, '8n');
+      kickPattern.start(0);
+      
+      // Snare with extra hits
+      let snareCount = 0;
+      const snarePattern = new Tone.Loop((time) => {
+        if (snareCount % 4 === 2 || snareCount % 4 === 3) {
+          noiseSnare.triggerAttackRelease('16n', time);
+        }
+        snareCount++;
+      }, '4n');
+      snarePattern.start(0);
+      
+      // Driving bass
+      let bassIndex = 0;
+      const bassLoop = new Tone.Loop((time) => {
+        synthBass.triggerAttackRelease(bassNotes[bassIndex % 16], '16n', time);
+        bassIndex++;
+      }, '16n');
+      bassLoop.start(0);
+      
+      // Dark pads
+      let chordIndex = 0;
+      const chordLoop = new Tone.Loop((time) => {
+        synthPad.triggerAttackRelease(chords[chordIndex % 4], '2n', time);
+        chordIndex++;
+      }, '2n');
+      chordLoop.start(0);
+      
+      // Fast arpeggios
+      let melodyIndex = 0;
+      const melodyLoop = new Tone.Loop((time) => {
+        const section = Math.floor(melodyIndex / 16) % 4;
+        const note = melodyPattern[section][melodyIndex % 16];
+        synthLead.triggerAttackRelease(note, '32n', time);
+        melodyIndex++;
+      }, '32n');
+      melodyLoop.start('1n');
+    }
+    
+    function startTrack3() {
+      // Tron Track 2 - Epic and intense (Dm - Bb - F - C)
+      const chords = [
+        ['D2', 'F2', 'A2'],
+        ['Bb1', 'D2', 'F2'],
+        ['F2', 'A2', 'C3'],
+        ['C2', 'E2', 'G2']
+      ];
+      
+      // Syncopated bass - more complex rhythm
+      const bassNotes = ['D1', 'D1', 'D2', 'D1', 'D1', 'A1', 'D2', 'D1',
+                         'Bb0', 'Bb0', 'Bb1', 'Bb0', 'Bb0', 'F1', 'Bb1', 'Bb0',
+                         'F1', 'F1', 'F2', 'F1', 'F1', 'C2', 'F2', 'F1',
+                         'C1', 'C1', 'C2', 'C1', 'C1', 'G1', 'C2', 'C1'];
+      
+      // Epic lead melody
+      const melodyPattern = [
+        ['D5', 'A4', 'F4', 'D4', 'A4', 'D5', 'F5', 'A5', 'F5', 'D5', 'A4', 'F4', 'A4', 'D5', 'F5', 'D5'],
+        ['Bb4', 'F4', 'D4', 'Bb3', 'F4', 'Bb4', 'D5', 'F5', 'D5', 'Bb4', 'F4', 'D4', 'F4', 'Bb4', 'D5', 'Bb4'],
+        ['F4', 'C4', 'A3', 'F3', 'C4', 'F4', 'A4', 'C5', 'A4', 'F4', 'C4', 'A3', 'C4', 'F4', 'A4', 'F4'],
+        ['C4', 'G3', 'E3', 'C3', 'G3', 'C4', 'E4', 'G4', 'E4', 'C4', 'G3', 'E3', 'G3', 'C4', 'E4', 'C4']
+      ];
+      
+      // Powerful kick pattern
+      let kickCount = 0;
+      const kickPattern = new Tone.Loop((time) => {
+        if (kickCount % 8 === 0 || kickCount % 8 === 3 || kickCount % 8 === 6) {
+          kick.triggerAttackRelease('C1', '8n', time);
+        }
+        kickCount++;
+      }, '8n');
+      kickPattern.start(0);
+      
+      // Complex snare
+      let snareCount = 0;
+      const snarePattern = new Tone.Loop((time) => {
+        if (snareCount % 8 === 4 || snareCount % 8 === 7) {
+          noiseSnare.triggerAttackRelease('8n', time);
+        }
+        snareCount++;
+      }, '8n');
+      snarePattern.start(0);
+      
+      // Syncopated bass
+      let bassIndex = 0;
+      const bassLoop = new Tone.Loop((time) => {
+        synthBass.triggerAttackRelease(bassNotes[bassIndex % 32], '16n', time);
+        bassIndex++;
+      }, '16n');
+      bassLoop.start(0);
+      
+      // Epic pads
+      let chordIndex = 0;
+      const chordLoop = new Tone.Loop((time) => {
+        synthPad.triggerAttackRelease(chords[chordIndex % 4], '1n', time);
+        chordIndex++;
+      }, '1n');
+      chordLoop.start(0);
+      
+      // Soaring lead
+      let melodyIndex = 0;
+      const melodyLoop = new Tone.Loop((time) => {
+        const section = Math.floor(melodyIndex / 16) % 4;
+        const note = melodyPattern[section][melodyIndex % 16];
+        synthLead.triggerAttackRelease(note, '16n', time);
+        melodyIndex++;
+      }, '16n');
+      melodyLoop.start('2n');
     }
     
     function stopBackgroundMusic() {
@@ -934,6 +1090,9 @@
     
     function startGame() {
       document.getElementById('startScreen').style.display = 'none';
+      
+      // Select random track
+      currentTrack = Math.floor(Math.random() * 3) + 1;
       
       // Initialize audio on user interaction
       Tone.start().then(() => {
@@ -1311,6 +1470,10 @@
       gameActive = false;
       waveActive = false;
       stopBackgroundMusic();
+      
+      // Select new random track for next game
+      currentTrack = Math.floor(Math.random() * 3) + 1;
+      
       document.getElementById('finalStats').innerHTML = `
         Wave Reached: ${wave}<br>
         Final Score: ${score}<br>
