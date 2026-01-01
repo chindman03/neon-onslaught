@@ -537,9 +537,208 @@
   
   <div id="fireButton">FIRE</div>
 
-  <script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js">
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    
+    // Audio setup
+    let audioInitialized = false;
+    let bgMusic = null;
+    let synthBass = null;
+    let synthLead = null;
+    let synthPad = null;
+    let noiseSnare = null;
+    let kick = null;
+    
+    // Sound effects
+    let sfxShoot = null;
+    let sfxHit = null;
+    let sfxKill = null;
+    let sfxUpgrade = null;
+    let sfxWaveComplete = null;
+    
+    function initAudio() {
+      if (audioInitialized) return;
+      
+      // Create synths with 8-bit character
+      synthBass = new Tone.MonoSynth({
+        oscillator: { type: 'square' },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.5 },
+        filterEnvelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.2, baseFrequency: 200, octaves: 2 }
+      }).toDestination();
+      synthBass.volume.value = -8;
+      
+      synthLead = new Tone.Synth({
+        oscillator: { type: 'square' },
+        envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 }
+      }).toDestination();
+      synthLead.volume.value = -12;
+      
+      synthPad = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 }
+      }).toDestination();
+      synthPad.volume.value = -20;
+      
+      // Drums
+      noiseSnare = new Tone.NoiseSynth({
+        noise: { type: 'white' },
+        envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+      }).toDestination();
+      noiseSnare.volume.value = -10;
+      
+      kick = new Tone.MembraneSynth({
+        pitchDecay: 0.05,
+        octaves: 4,
+        oscillator: { type: 'square' },
+        envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.1 }
+      }).toDestination();
+      kick.volume.value = -5;
+      
+      // Sound effects
+      sfxShoot = new Tone.Synth({
+        oscillator: { type: 'square' },
+        envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 }
+      }).toDestination();
+      sfxShoot.volume.value = -15;
+      
+      sfxHit = new Tone.NoiseSynth({
+        noise: { type: 'white' },
+        envelope: { attack: 0.001, decay: 0.05, sustain: 0 }
+      }).toDestination();
+      sfxHit.volume.value = -12;
+      
+      sfxKill = new Tone.Synth({
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.2 }
+      }).toDestination();
+      sfxKill.volume.value = -10;
+      
+      sfxUpgrade = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.5 }
+      }).toDestination();
+      sfxUpgrade.volume.value = -12;
+      
+      sfxWaveComplete = new Tone.Synth({
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.5 }
+      }).toDestination();
+      sfxWaveComplete.volume.value = -8;
+      
+      audioInitialized = true;
+    }
+    
+    function startBackgroundMusic() {
+      if (!audioInitialized) return;
+      
+      // Neon Rider style chord progression (Am - F - C - G)
+      const chords = [
+        ['A2', 'C3', 'E3'],
+        ['F2', 'A2', 'C3'],
+        ['C2', 'E2', 'G2'],
+        ['G2', 'B2', 'D3']
+      ];
+      
+      // Bassline pattern
+      const bassNotes = ['A1', 'A1', 'F1', 'F1', 'C1', 'C1', 'G1', 'G1'];
+      
+      // Lead melody - arpeggiated and catchy
+      const melodyPattern = [
+        ['A4', 'C5', 'E5', 'A5', 'E5', 'C5', 'A4', 'E4'],
+        ['F4', 'A4', 'C5', 'F5', 'C5', 'A4', 'F4', 'C4'],
+        ['C4', 'E4', 'G4', 'C5', 'G4', 'E4', 'C4', 'G3'],
+        ['G3', 'B3', 'D4', 'G4', 'D4', 'B3', 'G3', 'D3']
+      ];
+      
+      // 120 BPM - 2 minute loop (32 bars, 4 bars per section)
+      const bpm = 120;
+      Tone.Transport.bpm.value = bpm;
+      
+      // Kick drum pattern (4 on the floor)
+      const kickPattern = new Tone.Loop((time) => {
+        kick.triggerAttackRelease('C1', '8n', time);
+      }, '4n');
+      kickPattern.start(0);
+      
+      // Snare on 2 and 4
+      const snarePattern = new Tone.Loop((time) => {
+        noiseSnare.triggerAttackRelease('8n', time);
+      }, '2n');
+      snarePattern.start('4n');
+      
+      // Bass loop (changes every 2 bars)
+      let bassIndex = 0;
+      const bassLoop = new Tone.Loop((time) => {
+        synthBass.triggerAttackRelease(bassNotes[bassIndex % 8], '8n', time);
+        bassIndex++;
+      }, '8n');
+      bassLoop.start(0);
+      
+      // Chord pads (whole notes)
+      let chordIndex = 0;
+      const chordLoop = new Tone.Loop((time) => {
+        synthPad.triggerAttackRelease(chords[chordIndex % 4], '1n', time);
+        chordIndex++;
+      }, '1n');
+      chordLoop.start(0);
+      
+      // Lead melody (16th notes)
+      let melodyIndex = 0;
+      let melodySection = 0;
+      const melodyLoop = new Tone.Loop((time) => {
+        const section = Math.floor(melodyIndex / 8) % 4;
+        const note = melodyPattern[section][melodyIndex % 8];
+        synthLead.triggerAttackRelease(note, '16n', time);
+        melodyIndex++;
+      }, '16n');
+      melodyLoop.start('1n'); // Start after 1 bar
+      
+      // Start transport
+      Tone.Transport.start();
+    }
+    
+    function stopBackgroundMusic() {
+      if (audioInitialized) {
+        Tone.Transport.stop();
+      }
+    }
+    
+    function playShootSound() {
+      if (audioInitialized && sfxShoot) {
+        sfxShoot.triggerAttackRelease('C6', '32n');
+      }
+    }
+    
+    function playHitSound() {
+      if (audioInitialized && sfxHit) {
+        sfxHit.triggerAttackRelease('32n');
+      }
+    }
+    
+    function playKillSound() {
+      if (audioInitialized && sfxKill) {
+        sfxKill.triggerAttackRelease('A5', '16n');
+        setTimeout(() => sfxKill.triggerAttackRelease('A4', '16n'), 50);
+      }
+    }
+    
+    function playUpgradeSound() {
+      if (audioInitialized && sfxUpgrade) {
+        sfxUpgrade.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '8n');
+      }
+    }
+    
+    function playWaveCompleteSound() {
+      if (audioInitialized && sfxWaveComplete) {
+        const notes = ['C5', 'E5', 'G5', 'C6', 'E6'];
+        notes.forEach((note, i) => {
+          setTimeout(() => {
+            sfxWaveComplete.triggerAttackRelease(note, '8n');
+          }, i * 100);
+        });
+      }
+    }
     
     // Responsive canvas sizing
     function resizeCanvas() {
@@ -726,6 +925,17 @@
     
     function startGame() {
       document.getElementById('startScreen').style.display = 'none';
+      
+      // Initialize audio on user interaction
+      if (!audioInitialized) {
+        Tone.start().then(() => {
+          initAudio();
+          startBackgroundMusic();
+        });
+      } else {
+        startBackgroundMusic();
+      }
+      
       gameActive = true;
       startWave();
       gameLoop();
@@ -769,6 +979,8 @@
       
       if (now - lastShot < fireRate) return;
       lastShot = now;
+      
+      playShootSound();
       
       const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
       const bulletDamage = 10 + upgrades.damage.level * 5;
@@ -886,6 +1098,8 @@
           if (dist < bullet.size + enemy.size) {
             enemy.health -= bullet.damage;
             
+            playHitSound();
+            
             // Particles
             for (let p = 0; p < 5; p++) {
               particles.push({
@@ -903,6 +1117,8 @@
               enemies.splice(j, 1);
               score += 100 * wave;
               kills++;
+              
+              playKillSound();
               
               // Death particles
               for (let p = 0; p < 15; p++) {
@@ -965,8 +1181,10 @@
       // Check if wave complete
       if (waveActive && enemies.length === 0) {
         waveActive = false;
+        gameActive = false; // Pause game during upgrades
         wave++;
-        showUpgradeMenu();
+        playWaveCompleteSound();
+        setTimeout(() => showUpgradeMenu(), 500); // Small delay for dramatic effect
       }
     }
     
@@ -1022,6 +1240,8 @@
     function selectUpgrade(key) {
       upgrades[key].level++;
       
+      playUpgradeSound();
+      
       // Apply upgrade effects
       if (key === 'maxHealth') {
         player.maxHealth += 20;
@@ -1029,6 +1249,7 @@
       }
       
       document.getElementById('upgradeMenu').classList.remove('active');
+      gameActive = true; // Resume game
       startWave();
     }
     
@@ -1100,6 +1321,7 @@
     
     function gameOver() {
       gameActive = false;
+      stopBackgroundMusic();
       document.getElementById('finalStats').innerHTML = `
         Wave Reached: ${wave}<br>
         Final Score: ${score}<br>
@@ -1109,6 +1331,14 @@
     }
     
     function gameLoop() {
+      if (!gameActive && !waveActive) {
+        // Only draw, don't update game state during upgrade menu
+        draw();
+        updateHUD();
+        requestAnimationFrame(gameLoop);
+        return;
+      }
+      
       if (!gameActive) return;
       
       updatePlayer();
