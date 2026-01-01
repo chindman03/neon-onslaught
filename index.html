@@ -36,12 +36,19 @@
       background: var(--dark-bg);
       color: var(--neon-cyan);
       overflow: hidden;
-      cursor: none;
       user-select: none;
       position: fixed;
       width: 100%;
       height: 100%;
       -webkit-overflow-scrolling: touch;
+    }
+    
+    body.desktop-mode {
+      cursor: none;
+    }
+    
+    body.mobile-mode {
+      cursor: default;
     }
     
     #gameContainer {
@@ -79,6 +86,11 @@
       transform: translate(-50%, -50%);
       box-shadow: 0 0 10px var(--neon-magenta);
       transition: transform 0.1s ease;
+      display: none;
+    }
+    
+    body.desktop-mode #customCursor {
+      display: block;
     }
     
     #customCursor::before {
@@ -382,13 +394,9 @@
       box-shadow: 0 0 40px var(--neon-yellow);
     }
     
-    .mobile-controls-active #joystickContainer,
-    .mobile-controls-active #fireButton {
+    body.mobile-mode #joystickContainer,
+    body.mobile-mode #fireButton {
       display: flex;
-    }
-    
-    .mobile-controls-active #customCursor {
-      display: none;
     }
     
     @media (max-width: 768px) {
@@ -538,208 +546,9 @@
   <div id="fireButton">FIRE</div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-  <script>">
+  <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    
-    // Audio setup
-    let audioInitialized = false;
-    let bgMusic = null;
-    let synthBass = null;
-    let synthLead = null;
-    let synthPad = null;
-    let noiseSnare = null;
-    let kick = null;
-    
-    // Sound effects
-    let sfxShoot = null;
-    let sfxHit = null;
-    let sfxKill = null;
-    let sfxUpgrade = null;
-    let sfxWaveComplete = null;
-    
-    function initAudio() {
-      if (audioInitialized) return;
-      
-      // Create synths with 8-bit character
-      synthBass = new Tone.MonoSynth({
-        oscillator: { type: 'square' },
-        envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.5 },
-        filterEnvelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.2, baseFrequency: 200, octaves: 2 }
-      }).toDestination();
-      synthBass.volume.value = -8;
-      
-      synthLead = new Tone.Synth({
-        oscillator: { type: 'square' },
-        envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 }
-      }).toDestination();
-      synthLead.volume.value = -12;
-      
-      synthPad = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: 'triangle' },
-        envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 }
-      }).toDestination();
-      synthPad.volume.value = -20;
-      
-      // Drums
-      noiseSnare = new Tone.NoiseSynth({
-        noise: { type: 'white' },
-        envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
-      }).toDestination();
-      noiseSnare.volume.value = -10;
-      
-      kick = new Tone.MembraneSynth({
-        pitchDecay: 0.05,
-        octaves: 4,
-        oscillator: { type: 'square' },
-        envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.1 }
-      }).toDestination();
-      kick.volume.value = -5;
-      
-      // Sound effects
-      sfxShoot = new Tone.Synth({
-        oscillator: { type: 'square' },
-        envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 }
-      }).toDestination();
-      sfxShoot.volume.value = -15;
-      
-      sfxHit = new Tone.NoiseSynth({
-        noise: { type: 'white' },
-        envelope: { attack: 0.001, decay: 0.05, sustain: 0 }
-      }).toDestination();
-      sfxHit.volume.value = -12;
-      
-      sfxKill = new Tone.Synth({
-        oscillator: { type: 'triangle' },
-        envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.2 }
-      }).toDestination();
-      sfxKill.volume.value = -10;
-      
-      sfxUpgrade = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.5 }
-      }).toDestination();
-      sfxUpgrade.volume.value = -12;
-      
-      sfxWaveComplete = new Tone.Synth({
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.5 }
-      }).toDestination();
-      sfxWaveComplete.volume.value = -8;
-      
-      audioInitialized = true;
-    }
-    
-    function startBackgroundMusic() {
-      if (!audioInitialized) return;
-      
-      // Neon Rider style chord progression (Am - F - C - G)
-      const chords = [
-        ['A2', 'C3', 'E3'],
-        ['F2', 'A2', 'C3'],
-        ['C2', 'E2', 'G2'],
-        ['G2', 'B2', 'D3']
-      ];
-      
-      // Bassline pattern
-      const bassNotes = ['A1', 'A1', 'F1', 'F1', 'C1', 'C1', 'G1', 'G1'];
-      
-      // Lead melody - arpeggiated and catchy
-      const melodyPattern = [
-        ['A4', 'C5', 'E5', 'A5', 'E5', 'C5', 'A4', 'E4'],
-        ['F4', 'A4', 'C5', 'F5', 'C5', 'A4', 'F4', 'C4'],
-        ['C4', 'E4', 'G4', 'C5', 'G4', 'E4', 'C4', 'G3'],
-        ['G3', 'B3', 'D4', 'G4', 'D4', 'B3', 'G3', 'D3']
-      ];
-      
-      // 120 BPM - 2 minute loop (32 bars, 4 bars per section)
-      const bpm = 120;
-      Tone.Transport.bpm.value = bpm;
-      
-      // Kick drum pattern (4 on the floor)
-      const kickPattern = new Tone.Loop((time) => {
-        kick.triggerAttackRelease('C1', '8n', time);
-      }, '4n');
-      kickPattern.start(0);
-      
-      // Snare on 2 and 4
-      const snarePattern = new Tone.Loop((time) => {
-        noiseSnare.triggerAttackRelease('8n', time);
-      }, '2n');
-      snarePattern.start('4n');
-      
-      // Bass loop (changes every 2 bars)
-      let bassIndex = 0;
-      const bassLoop = new Tone.Loop((time) => {
-        synthBass.triggerAttackRelease(bassNotes[bassIndex % 8], '8n', time);
-        bassIndex++;
-      }, '8n');
-      bassLoop.start(0);
-      
-      // Chord pads (whole notes)
-      let chordIndex = 0;
-      const chordLoop = new Tone.Loop((time) => {
-        synthPad.triggerAttackRelease(chords[chordIndex % 4], '1n', time);
-        chordIndex++;
-      }, '1n');
-      chordLoop.start(0);
-      
-      // Lead melody (16th notes)
-      let melodyIndex = 0;
-      let melodySection = 0;
-      const melodyLoop = new Tone.Loop((time) => {
-        const section = Math.floor(melodyIndex / 8) % 4;
-        const note = melodyPattern[section][melodyIndex % 8];
-        synthLead.triggerAttackRelease(note, '16n', time);
-        melodyIndex++;
-      }, '16n');
-      melodyLoop.start('1n'); // Start after 1 bar
-      
-      // Start transport
-      Tone.Transport.start();
-    }
-    
-    function stopBackgroundMusic() {
-      if (audioInitialized) {
-        Tone.Transport.stop();
-      }
-    }
-    
-    function playShootSound() {
-      if (audioInitialized && sfxShoot) {
-        sfxShoot.triggerAttackRelease('C6', '32n');
-      }
-    }
-    
-    function playHitSound() {
-      if (audioInitialized && sfxHit) {
-        sfxHit.triggerAttackRelease('32n');
-      }
-    }
-    
-    function playKillSound() {
-      if (audioInitialized && sfxKill) {
-        sfxKill.triggerAttackRelease('A5', '16n');
-        setTimeout(() => sfxKill.triggerAttackRelease('A4', '16n'), 50);
-      }
-    }
-    
-    function playUpgradeSound() {
-      if (audioInitialized && sfxUpgrade) {
-        sfxUpgrade.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '8n');
-      }
-    }
-    
-    function playWaveCompleteSound() {
-      if (audioInitialized && sfxWaveComplete) {
-        const notes = ['C5', 'E5', 'G5', 'C6', 'E6'];
-        notes.forEach((note, i) => {
-          setTimeout(() => {
-            sfxWaveComplete.triggerAttackRelease(note, '8n');
-          }, i * 100);
-        });
-      }
-    }
     
     // Responsive canvas sizing
     function resizeCanvas() {
@@ -765,12 +574,213 @@
     window.addEventListener('resize', resizeCanvas);
     window.addEventListener('load', resizeCanvas);
     
+    // Audio setup
+    let audioInitialized = false;
+    let synthBass, synthLead, synthPad, noiseSnare, kick;
+    let sfxShoot, sfxHit, sfxKill, sfxUpgrade, sfxWaveComplete;
+    
+    function initAudio() {
+      if (audioInitialized) return;
+      
+      try {
+        // Create synths with 8-bit character
+        synthBass = new Tone.MonoSynth({
+          oscillator: { type: 'square' },
+          envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.5 },
+          filterEnvelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.2, baseFrequency: 200, octaves: 2 }
+        }).toDestination();
+        synthBass.volume.value = -8;
+        
+        synthLead = new Tone.Synth({
+          oscillator: { type: 'square' },
+          envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 }
+        }).toDestination();
+        synthLead.volume.value = -12;
+        
+        synthPad = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'triangle' },
+          envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 }
+        }).toDestination();
+        synthPad.volume.value = -20;
+        
+        // Drums
+        noiseSnare = new Tone.NoiseSynth({
+          noise: { type: 'white' },
+          envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+        }).toDestination();
+        noiseSnare.volume.value = -10;
+        
+        kick = new Tone.MembraneSynth({
+          pitchDecay: 0.05,
+          octaves: 4,
+          oscillator: { type: 'square' },
+          envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.1 }
+        }).toDestination();
+        kick.volume.value = -5;
+        
+        // Sound effects
+        sfxShoot = new Tone.Synth({
+          oscillator: { type: 'square' },
+          envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 }
+        }).toDestination();
+        sfxShoot.volume.value = -15;
+        
+        sfxHit = new Tone.NoiseSynth({
+          noise: { type: 'white' },
+          envelope: { attack: 0.001, decay: 0.05, sustain: 0 }
+        }).toDestination();
+        sfxHit.volume.value = -12;
+        
+        sfxKill = new Tone.Synth({
+          oscillator: { type: 'triangle' },
+          envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.2 }
+        }).toDestination();
+        sfxKill.volume.value = -10;
+        
+        sfxUpgrade = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.5 }
+        }).toDestination();
+        sfxUpgrade.volume.value = -12;
+        
+        sfxWaveComplete = new Tone.Synth({
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.5 }
+        }).toDestination();
+        sfxWaveComplete.volume.value = -8;
+        
+        audioInitialized = true;
+      } catch (e) {
+        console.log('Audio initialization failed:', e);
+      }
+    }
+    
+    function startBackgroundMusic() {
+      if (!audioInitialized) return;
+      
+      try {
+        // Neon Rider style chord progression
+        const chords = [
+          ['A2', 'C3', 'E3'],
+          ['F2', 'A2', 'C3'],
+          ['C2', 'E2', 'G2'],
+          ['G2', 'B2', 'D3']
+        ];
+        
+        const bassNotes = ['A1', 'A1', 'F1', 'F1', 'C1', 'C1', 'G1', 'G1'];
+        
+        const melodyPattern = [
+          ['A4', 'C5', 'E5', 'A5', 'E5', 'C5', 'A4', 'E4'],
+          ['F4', 'A4', 'C5', 'F5', 'C5', 'A4', 'F4', 'C4'],
+          ['C4', 'E4', 'G4', 'C5', 'G4', 'E4', 'C4', 'G3'],
+          ['G3', 'B3', 'D4', 'G4', 'D4', 'B3', 'G3', 'D3']
+        ];
+        
+        const bpm = 120;
+        Tone.Transport.bpm.value = bpm;
+        
+        // Kick drum pattern
+        const kickPattern = new Tone.Loop((time) => {
+          kick.triggerAttackRelease('C1', '8n', time);
+        }, '4n');
+        kickPattern.start(0);
+        
+        // Snare on 2 and 4
+        const snarePattern = new Tone.Loop((time) => {
+          noiseSnare.triggerAttackRelease('8n', time);
+        }, '2n');
+        snarePattern.start('4n');
+        
+        // Bass loop
+        let bassIndex = 0;
+        const bassLoop = new Tone.Loop((time) => {
+          synthBass.triggerAttackRelease(bassNotes[bassIndex % 8], '8n', time);
+          bassIndex++;
+        }, '8n');
+        bassLoop.start(0);
+        
+        // Chord pads
+        let chordIndex = 0;
+        const chordLoop = new Tone.Loop((time) => {
+          synthPad.triggerAttackRelease(chords[chordIndex % 4], '1n', time);
+          chordIndex++;
+        }, '1n');
+        chordLoop.start(0);
+        
+        // Lead melody
+        let melodyIndex = 0;
+        const melodyLoop = new Tone.Loop((time) => {
+          const section = Math.floor(melodyIndex / 8) % 4;
+          const note = melodyPattern[section][melodyIndex % 8];
+          synthLead.triggerAttackRelease(note, '16n', time);
+          melodyIndex++;
+        }, '16n');
+        melodyLoop.start('1n');
+        
+        Tone.Transport.start();
+      } catch (e) {
+        console.log('Music start failed:', e);
+      }
+    }
+    
+    function stopBackgroundMusic() {
+      try {
+        if (audioInitialized) {
+          Tone.Transport.stop();
+        }
+      } catch (e) {
+        console.log('Music stop failed:', e);
+      }
+    }
+    
+    function playShootSound() {
+      try {
+        if (audioInitialized && sfxShoot) {
+          sfxShoot.triggerAttackRelease('C6', '32n');
+        }
+      } catch (e) {}
+    }
+    
+    function playHitSound() {
+      try {
+        if (audioInitialized && sfxHit) {
+          sfxHit.triggerAttackRelease('32n');
+        }
+      } catch (e) {}
+    }
+    
+    function playKillSound() {
+      try {
+        if (audioInitialized && sfxKill) {
+          sfxKill.triggerAttackRelease('A5', '16n');
+          setTimeout(() => sfxKill.triggerAttackRelease('A4', '16n'), 50);
+        }
+      } catch (e) {}
+    }
+    
+    function playUpgradeSound() {
+      try {
+        if (audioInitialized && sfxUpgrade) {
+          sfxUpgrade.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '8n');
+        }
+      } catch (e) {}
+    }
+    
+    function playWaveCompleteSound() {
+      try {
+        if (audioInitialized && sfxWaveComplete) {
+          const notes = ['C5', 'E5', 'G5', 'C6', 'E6'];
+          notes.forEach((note, i) => {
+            setTimeout(() => {
+              sfxWaveComplete.triggerAttackRelease(note, '8n');
+            }, i * 100);
+          });
+        }
+      } catch (e) {}
+    }
+    
     // Custom cursor
     const cursor = document.getElementById('customCursor');
-    document.addEventListener('mousemove', (e) => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top = e.clientY + 'px';
-    });
     
     // Game state
     let gameActive = false;
@@ -816,17 +826,6 @@
     // Input
     const keys = {};
     
-    canvas.addEventListener('mousemove', (e) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
-      mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
-    });
-    
-    canvas.addEventListener('mousedown', () => { shooting = true; });
-    canvas.addEventListener('mouseup', () => { shooting = false; });
-    document.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
-    document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-    
     // Mobile detection and virtual controls
     let isMobile = false;
     let joystickActive = false;
@@ -844,7 +843,7 @@
       isMobile = detectMobile();
       
       if (isMobile) {
-        document.body.classList.add('mobile-controls-active');
+        document.body.classList.add('mobile-mode');
         
         // Joystick
         const joystickContainer = document.getElementById('joystickContainer');
@@ -866,7 +865,6 @@
           const deltaX = touch.clientX - joystickStartX;
           const deltaY = touch.clientY - joystickStartY;
           
-          // Limit joystick range
           const maxDistance = 35;
           const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
           
@@ -904,12 +902,20 @@
           shooting = false;
         });
         
-        // Auto-aim to nearest enemy on mobile
         canvas.addEventListener('touchstart', (e) => {
           e.preventDefault();
         });
       } else {
-        // Desktop mouse controls
+        // Desktop mode
+        document.body.classList.add('desktop-mode');
+        
+        // Mouse cursor tracking
+        document.addEventListener('mousemove', (e) => {
+          cursor.style.left = e.clientX + 'px';
+          cursor.style.top = e.clientY + 'px';
+        });
+        
+        // Canvas mouse controls
         canvas.addEventListener('mousemove', (e) => {
           const rect = canvas.getBoundingClientRect();
           mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
@@ -921,21 +927,21 @@
       }
     }
     
-    // Initialize controls when game starts
+    document.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
+    document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+    
     window.addEventListener('load', initMobileControls);
     
     function startGame() {
       document.getElementById('startScreen').style.display = 'none';
       
       // Initialize audio on user interaction
-      if (!audioInitialized) {
-        Tone.start().then(() => {
-          initAudio();
-          startBackgroundMusic();
-        });
-      } else {
+      Tone.start().then(() => {
+        initAudio();
         startBackgroundMusic();
-      }
+      }).catch(e => {
+        console.log('Audio start failed:', e);
+      });
       
       gameActive = true;
       startWave();
@@ -952,6 +958,8 @@
     }
     
     function spawnEnemy() {
+      if (!waveActive) return; // Don't spawn during upgrades
+      
       const side = Math.floor(Math.random() * 4);
       let x, y;
       
@@ -1004,58 +1012,6 @@
       }
     }
     
-    function updatePlayer() {
-      // Movement
-      player.vx = 0;
-      player.vy = 0;
-      
-      const moveSpeed = player.speed + upgrades.moveSpeed.level * 0.8;
-      
-      if (isMobile && joystickActive) {
-        // Virtual joystick movement
-        player.vx = (joystickCurrentX / 35) * moveSpeed;
-        player.vy = (joystickCurrentY / 35) * moveSpeed;
-      } else {
-        // Keyboard movement
-        if (keys['w'] || keys['arrowup']) player.vy = -moveSpeed;
-        if (keys['s'] || keys['arrowdown']) player.vy = moveSpeed;
-        if (keys['a'] || keys['arrowleft']) player.vx = -moveSpeed;
-        if (keys['d'] || keys['arrowright']) player.vx = moveSpeed;
-        
-        // Normalize diagonal movement
-        if (player.vx !== 0 && player.vy !== 0) {
-          player.vx *= 0.707;
-          player.vy *= 0.707;
-        }
-      }
-      
-      player.x += player.vx;
-      player.y += player.vy;
-      
-      // Boundaries
-      player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
-      player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
-      
-      // Health regen
-      if (upgrades.healthRegen.level > 0) {
-        player.health = Math.min(player.maxHealth, player.health + upgrades.healthRegen.level * 0.02);
-      }
-      
-      // Auto-aim for mobile
-      if (isMobile && shooting) {
-        const nearestEnemy = findNearestEnemy();
-        if (nearestEnemy) {
-          mouseX = nearestEnemy.x;
-          mouseY = nearestEnemy.y;
-        }
-      }
-      
-      // Shooting
-      if (shooting && gameActive) {
-        shoot();
-      }
-    }
-    
     function findNearestEnemy() {
       if (enemies.length === 0) return null;
       
@@ -1076,20 +1032,66 @@
       return nearest;
     }
     
+    function updatePlayer() {
+      if (!gameActive) return;
+      
+      // Movement
+      player.vx = 0;
+      player.vy = 0;
+      
+      const moveSpeed = player.speed + upgrades.moveSpeed.level * 0.8;
+      
+      if (isMobile && joystickActive) {
+        player.vx = (joystickCurrentX / 35) * moveSpeed;
+        player.vy = (joystickCurrentY / 35) * moveSpeed;
+      } else {
+        if (keys['w'] || keys['arrowup']) player.vy = -moveSpeed;
+        if (keys['s'] || keys['arrowdown']) player.vy = moveSpeed;
+        if (keys['a'] || keys['arrowleft']) player.vx = -moveSpeed;
+        if (keys['d'] || keys['arrowright']) player.vx = moveSpeed;
+        
+        if (player.vx !== 0 && player.vy !== 0) {
+          player.vx *= 0.707;
+          player.vy *= 0.707;
+        }
+      }
+      
+      player.x += player.vx;
+      player.y += player.vy;
+      
+      player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+      player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+      
+      if (upgrades.healthRegen.level > 0) {
+        player.health = Math.min(player.maxHealth, player.health + upgrades.healthRegen.level * 0.02);
+      }
+      
+      // Auto-aim for mobile
+      if (isMobile && shooting) {
+        const nearestEnemy = findNearestEnemy();
+        if (nearestEnemy) {
+          mouseX = nearestEnemy.x;
+          mouseY = nearestEnemy.y;
+        }
+      }
+      
+      if (shooting && gameActive) {
+        shoot();
+      }
+    }
+    
     function updateBullets() {
       for (let i = bullets.length - 1; i >= 0; i--) {
         const bullet = bullets[i];
         bullet.x += bullet.vx;
         bullet.y += bullet.vy;
         
-        // Remove off-screen bullets
         if (bullet.x < 0 || bullet.x > canvas.width || 
             bullet.y < 0 || bullet.y > canvas.height) {
           bullets.splice(i, 1);
           continue;
         }
         
-        // Check enemy collision
         for (let j = enemies.length - 1; j >= 0; j--) {
           const enemy = enemies[j];
           const dx = bullet.x - enemy.x;
@@ -1101,7 +1103,6 @@
             
             playHitSound();
             
-            // Particles
             for (let p = 0; p < 5; p++) {
               particles.push({
                 x: enemy.x,
@@ -1121,7 +1122,6 @@
               
               playKillSound();
               
-              // Death particles
               for (let p = 0; p < 15; p++) {
                 particles.push({
                   x: enemy.x,
@@ -1155,12 +1155,10 @@
         enemy.x += (dx / dist) * enemy.speed;
         enemy.y += (dy / dist) * enemy.speed;
         
-        // Check player collision
         if (dist < enemy.size + player.size) {
           player.health -= enemy.damage;
           enemies.splice(i, 1);
           
-          // Damage particles
           for (let p = 0; p < 10; p++) {
             particles.push({
               x: player.x,
@@ -1179,13 +1177,12 @@
         }
       }
       
-      // Check if wave complete
       if (waveActive && enemies.length === 0) {
         waveActive = false;
-        gameActive = false; // Pause game during upgrades
+        gameActive = false;
         wave++;
         playWaveCompleteSound();
-        setTimeout(() => showUpgradeMenu(), 500); // Small delay for dramatic effect
+        setTimeout(() => showUpgradeMenu(), 500);
       }
     }
     
@@ -1209,7 +1206,6 @@
       const grid = document.getElementById('upgradeGrid');
       grid.innerHTML = '';
       
-      // Randomly select 3 upgrades
       const availableUpgrades = Object.keys(upgrades).filter(key => 
         upgrades[key].level < upgrades[key].max
       );
@@ -1243,23 +1239,20 @@
       
       playUpgradeSound();
       
-      // Apply upgrade effects
       if (key === 'maxHealth') {
         player.maxHealth += 20;
         player.health = player.maxHealth;
       }
       
       document.getElementById('upgradeMenu').classList.remove('active');
-      gameActive = true; // Resume game
+      gameActive = true;
       startWave();
     }
     
     function draw() {
-      // Clear
       ctx.fillStyle = '#0a0a14';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Particles
       particles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.life / 30;
@@ -1267,15 +1260,12 @@
       });
       ctx.globalAlpha = 1;
       
-      // Enemies
       enemies.forEach(enemy => {
-        // Enemy
         ctx.fillStyle = enemy.color;
         ctx.shadowBlur = 15;
         ctx.shadowColor = enemy.color;
         ctx.fillRect(enemy.x - enemy.size, enemy.y - enemy.size, enemy.size * 2, enemy.size * 2);
         
-        // Health bar
         ctx.shadowBlur = 0;
         const barWidth = enemy.size * 2;
         const healthPercent = enemy.health / enemy.maxHealth;
@@ -1285,7 +1275,6 @@
         ctx.fillRect(enemy.x - enemy.size, enemy.y - enemy.size - 5, barWidth * healthPercent, 2);
       });
       
-      // Bullets
       bullets.forEach(bullet => {
         ctx.fillStyle = bullet.color;
         ctx.shadowBlur = 10;
@@ -1293,13 +1282,11 @@
         ctx.fillRect(bullet.x - bullet.size/2, bullet.y - bullet.size/2, bullet.size, bullet.size);
       });
       
-      // Player
       ctx.fillStyle = player.color;
       ctx.shadowBlur = 20;
       ctx.shadowColor = player.color;
       ctx.fillRect(player.x - player.size, player.y - player.size, player.size * 2, player.size * 2);
       
-      // Aim line
       ctx.shadowBlur = 0;
       ctx.strokeStyle = 'rgba(255, 0, 255, 0.3)';
       ctx.lineWidth = 1;
@@ -1322,6 +1309,7 @@
     
     function gameOver() {
       gameActive = false;
+      waveActive = false;
       stopBackgroundMusic();
       document.getElementById('finalStats').innerHTML = `
         Wave Reached: ${wave}<br>
@@ -1332,22 +1320,17 @@
     }
     
     function gameLoop() {
-      if (!gameActive && !waveActive) {
-        // Only draw, don't update game state during upgrade menu
-        draw();
-        updateHUD();
-        requestAnimationFrame(gameLoop);
-        return;
-      }
-      
-      if (!gameActive) return;
-      
-      updatePlayer();
-      updateBullets();
-      updateEnemies();
-      updateParticles();
+      // Always draw
       draw();
       updateHUD();
+      
+      // Only update game state if active
+      if (gameActive) {
+        updatePlayer();
+        updateBullets();
+        updateEnemies();
+        updateParticles();
+      }
       
       requestAnimationFrame(gameLoop);
     }
